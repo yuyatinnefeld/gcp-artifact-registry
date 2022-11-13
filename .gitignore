@@ -1,0 +1,16 @@
+# python build files
+build
+dist
+mario_library.egg-info
+
+# virtual environment
+venv
+env
+wenv
+
+# cache
+__pycache__
+.DS_Store
+
+# ide stuff
+.idea
