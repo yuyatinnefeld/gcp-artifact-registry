@@ -9,5 +9,5 @@ def frontend_module_1():
 # // simple module 2
 ##################################################################################
  
-def frontend_module_1():
+def frontend_module_2():
     print("frontend module 2")
