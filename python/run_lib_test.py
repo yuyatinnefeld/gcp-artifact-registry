@@ -16,10 +16,10 @@ analytics_lib_module_2()
 
 print(f"{'#'*10} TEST - My Packages 2 {'#'*10}")
 
-from frontend_lib import frontend_module_1, frontend_module_2
+import frontend_lib
 
 print(f"{'*'*5} TEST - Frontend Module 1 {'*'*5}")
-frontend_module_1()
+frontend_lib.frontend_module_1()
 
 print(f"{'*'*5} TEST - Frontend Module 2 {'*'*5}")
-frontend_module_2()
+frontend_lib.frontend_module_2()
