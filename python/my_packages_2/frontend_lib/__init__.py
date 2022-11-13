@@ -1,13 +1,13 @@
 ##################################################################################
-# // simple module 1
+# // frontend simple module 1
 ##################################################################################
  
 def frontend_module_1():
-    print("frontend module 1")
-    
+    print("frontend lib module 1")
+
 ##################################################################################
-# // simple module 2
+# // frontend simple module 2
 ##################################################################################
  
 def frontend_module_2():
-    print("frontend module 2")
+    print("frontend lib module 2")
