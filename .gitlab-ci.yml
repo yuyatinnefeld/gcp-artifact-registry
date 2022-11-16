@@ -225,7 +225,7 @@ test-backend-packages:
 
 ##### version check #######################################################
 
-check-current-version
+check-current-version:
   image: ${CLOUD_SDK_IMAGE_URL}
   stage: current-version
   before_script:
