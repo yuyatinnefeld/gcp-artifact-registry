@@ -1,7 +1,3 @@
-############### TEST My Packages 2 ###############
-
-print(f"{'#'*10} TEST - My Packages 2 {'#'*10}")
-
 import frontend_lib
 
 print(f"{'*'*5} TEST - Frontend Module 1 {'*'*5}")
