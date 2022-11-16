@@ -211,7 +211,7 @@ test-frontend-packages:
       - develop
   when: manual
 
-test-frontend-packages:
+test-backend-packages:
   extends:
     - .test-packages
   script:
