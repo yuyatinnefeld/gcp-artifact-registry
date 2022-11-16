@@ -11,49 +11,49 @@ variables:
   CLOUD_SDK_IMAGE_URL: google/cloud-sdk
 
 stages:
-  #- versioning
+  - versioning
   - build
   - upload
   - test
 
 ##### versioning #########################################################
 
-# increment-version:
-#   stage: versioning
-#   image: ${PYTHON_IMAGE}
-#   before_script:
-#     - pip install fire
-#   script:
-#     # set up ssh
-#     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-#     - eval $(ssh-agent -s)
-#     - ssh-add <(echo "$GITLAB_SSH_PRIVATE_KEY")
-#     - mkdir -p ~/.ssh
-#     - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-#     # check out git repository
-#     - git config --global user.name "GitLab Runner"
-#     - git config --global user.email "yuyatinnefeld@gitlab.com"
-#     - git clone ssh://git@gitlab.com:yuyatinnefeld/artifact-registry.git
-#     - cd artifact-registry
-#     # increment version number and commit new version number
-#     - echo "incrementing fix version number on branch ${BRANCH}..."
-#     - git checkout ${BRANCH} && git pull
-#     - export PACKAGE_PATH=${MY_PACKAGES_1_PATH}
-#     - python ./version.py inc_fix
-#     - export PACKAGE_PATH=${MY_PACKAGES_2_PATH}
-#     - python ./version.py inc_fix
-#     - git add .
-#     - git commit -m "Incrementing VERSION from my-packages-1 and my-packages-2"
-#     - git push origin ${BRANCH}
-#   variables:
-#     BRANCH: master
-#   artifacts:
-#     paths:
-#       - ${MY_PACKAGES_1_PATH}/VERSION
-#       - ${MY_PACKAGES_2_PATH}/VERSION
-#   only:
-#       - develop
-#   when: manual
+increment-version:
+  stage: versioning
+  image: ${PYTHON_IMAGE}
+  before_script:
+    - pip install fire
+  script:
+    # set up ssh
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$GITLAB_SSH_PRIVATE_KEY")
+    - mkdir -p ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+    # check out git repository
+    - git config --global user.name "GitLab Runner"
+    - git config --global user.email "yuyatinnefeld@gitlab.com"
+    - git clone ssh://git@gitlab.com:yuyatinnefeld/artifact-registry.git
+    - cd artifact-registry
+    # increment version number and commit new version number
+    - echo "incrementing fix version number on branch ${BRANCH}..."
+    - git checkout ${BRANCH} && git pull
+    - export PACKAGE_PATH=${MY_PACKAGES_1_PATH}
+    - python ./version.py inc_fix
+    - export PACKAGE_PATH=${MY_PACKAGES_2_PATH}
+    - python ./version.py inc_fix
+    - git add .
+    - git commit -m "Incrementing VERSION from my-packages-1 and my-packages-2"
+    - git push origin ${BRANCH}
+  variables:
+    BRANCH: master
+  artifacts:
+    paths:
+      - ${MY_PACKAGES_1_PATH}/VERSION
+      - ${MY_PACKAGES_2_PATH}/VERSION
+  only:
+      - develop
+  when: manual
 
 ##### build stage #######################################################
 
@@ -102,17 +102,6 @@ build-packages-2-whl:
 .upload-packages:
   stage: upload
   image: ${CLOUD_SDK_IMAGE_URL}
-  script:
-    - gcloud config set project ${GCP_PROJECT_ID}
-    - pip install twine keyring
-    - pip install keyrings.google-artifactregistry-auth
-    - gcloud artifacts print-settings python --project=${GCP_PROJECT_ID} --repository=${REPO_NAME} --location=${REGION} --json-key=./credentials.json
-    - python3 -m twine upload --repository-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/ ${PACKAGES_PATH}/dist/* --verbose
-    - gcloud artifacts versions list --package=${LIBRARY_NAME}
-
-upload-packages-1:
-  extends:
-    - .upload-packages
   before_script:
     - cd ${PYTHON_MAIN_DIR}
     - gcloud auth activate-service-account --key-file ${GCP_SERVICE_KEY_DEV_SYS}
@@ -120,6 +109,16 @@ upload-packages-1:
     - export GOOGLE_APPLICATION_CREDENTIALS=./credentials.json
     - gcloud config set artifacts/repository ${REPO_NAME}
     - gcloud config set artifacts/location ${REGION}
+    - gcloud config set project ${GCP_PROJECT_ID}
+    - pip install twine keyring keyrings.google-artifactregistry-auth
+
+upload-packages-1:
+  extends:
+    - .upload-packages
+  script:
+    - gcloud artifacts print-settings python --project=${GCP_PROJECT_ID} --repository=${REPO_NAME} --location=${REGION} --json-key=./credentials.json
+    - python3 -m twine upload --repository-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/ ${PACKAGES_PATH}/dist/* --verbose
+    - gcloud artifacts versions list --package=${LIBRARY_NAME}
   variables:
     PACKAGES_PATH: ${MY_PACKAGES_1_PATH}
     LIBRARY_NAME: ${MY_LIBRARY_1_NAME}
@@ -130,13 +129,10 @@ upload-packages-1:
 upload-packages-2:
   extends:
     - .upload-packages
-  before_script:
-    - cd ${PYTHON_MAIN_DIR}
-    - gcloud auth activate-service-account --key-file ${GCP_SERVICE_KEY_DEV_SYS}
-    - cp ${GCP_SERVICE_KEY_DEV_SYS} ./credentials.json
-    - export GOOGLE_APPLICATION_CREDENTIALS=./credentials.json
-    - gcloud config set artifacts/repository ${REPO_NAME}
-    - gcloud config set artifacts/location ${REGION}
+  script:
+    - gcloud artifacts print-settings python --project=${GCP_PROJECT_ID} --repository=${REPO_NAME} --location=${REGION} --json-key=./credentials.json
+    - python3 -m twine upload --repository-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/ ${PACKAGES_PATH}/dist/* --verbose
+    - gcloud artifacts versions list --package=${LIBRARY_NAME}
   variables:
     PACKAGES_PATH: ${MY_PACKAGES_2_PATH}
     LIBRARY_NAME: ${MY_LIBRARY_2_NAME}
@@ -149,17 +145,6 @@ upload-packages-2:
 .test-packages:
   stage: test
   image: ${CLOUD_SDK_IMAGE_URL}
-  script:
-    - gcloud config set project ${GCP_PROJECT_ID}
-    - pip install keyrings.google-artifactregistry-auth
-    - pip install --index-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/simple/ ${MY_LIBRARY_1_NAME}
-    - pip install --index-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/simple/ ${MY_LIBRARY_2_NAME}
-    - pip install -r requirements.txt
-    - python3 run_lib_test.py
-
-test-packages-dev:
-  extends:
-    - .test-packages
   before_script:
     - cd ${PYTHON_MAIN_DIR}
     - gcloud auth activate-service-account --key-file ${GCP_SERVICE_KEY_DEV_SYS}
@@ -167,6 +152,27 @@ test-packages-dev:
     - export GOOGLE_APPLICATION_CREDENTIALS=./credentials.json
     - gcloud config set artifacts/repository ${REPO_NAME}
     - gcloud config set artifacts/location ${REGION}
+    - gcloud config set project ${GCP_PROJECT_ID}
+    - pip install keyrings.google-artifactregistry-auth
+    - pip install -r requirements.txt
+
+test-packge-1:
+  extends:
+    - .test-packages
+  script:
+    - pip install --index-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/simple/ ${MY_LIBRARY_1_NAME}
+    - python3 run_analytics_packages.py
   only:
       - develop
   when: manual
+
+test-packge-2:
+  extends:
+    - .test-packages
+  script:
+    - pip install --index-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/simple/ ${MY_LIBRARY_2_NAME}
+    - python3 run_frontend_packages.py
+  only:
+      - develop
+  when: manual
+
