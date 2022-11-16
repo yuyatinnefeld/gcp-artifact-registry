@@ -5,8 +5,10 @@ variables:
   PYTHON_MAIN_DIR: python
   MY_PACKAGES_1_PATH: my_packages_1
   MY_PACKAGES_2_PATH: my_packages_2
+  MY_PACKAGES_3_PATH: my_packages_3
   MY_LIBRARY_1_NAME: analytics-lib
   MY_LIBRARY_2_NAME: frontend-lib
+  MY_LIBRARY_3_NAME: backend-lib
   GCP_PROJECT_ID: yuyatinnefeld-dev
   CLOUD_SDK_IMAGE_URL: google/cloud-sdk
 
@@ -66,7 +68,7 @@ before_script:
   - pip install --upgrade pip
   - pip install -r requirements.txt
 
-build-pacakge-1-whl:
+build-analytics-whl:
   stage: build
   image: ${PYTHON_IMAGE}
   script:
@@ -82,7 +84,7 @@ build-pacakge-1-whl:
       - develop
   when: manual
 
-build-packages-2-whl:
+build-frontend-whl:
   stage: build
   image: ${PYTHON_IMAGE}
   script:
@@ -112,7 +114,7 @@ build-packages-2-whl:
     - gcloud config set project ${GCP_PROJECT_ID}
     - pip install twine keyring keyrings.google-artifactregistry-auth
 
-upload-packages-1:
+upload-analytics-packages:
   extends:
     - .upload-packages
   script:
@@ -126,7 +128,7 @@ upload-packages-1:
       - develop
   when: manual
 
-upload-packages-2:
+upload-frontend-packages:
   extends:
     - .upload-packages
   script:
@@ -139,6 +141,39 @@ upload-packages-2:
   only:
       - develop
   when: manual
+
+# upload with poetry project
+
+.upload-poetry-packages:
+  stage: upload
+  image: ${CLOUD_SDK_IMAGE_URL}
+  before_script:
+    - cd ${PYTHON_MAIN_DIR}/${PACKAGES_PATH}
+    - gcloud auth activate-service-account --key-file ${GCP_SERVICE_KEY_DEV_SYS}
+    - cp ${GCP_SERVICE_KEY_DEV_SYS} ./credentials.json
+    - export GOOGLE_APPLICATION_CREDENTIALS=./credentials.json
+    - gcloud config set artifacts/repository ${REPO_NAME}
+    - gcloud config set artifacts/location ${REGION}
+    - gcloud config set project ${GCP_PROJECT_ID}
+    - curl -sSL https://install.python-poetry.org | python3 -
+    - pip install poetry twine keyring keyrings.google-artifactregistry-auth
+
+upload-backend-packages:
+  extends:
+    - .upload-poetry-packages
+  script:
+    - gcloud artifacts print-settings python --project=${GCP_PROJECT_ID} --repository=${REPO_NAME} --location=${REGION} --json-key=./credentials.json
+    - poetry config repositories.google https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}
+    - poetry publish --build -r google
+    - gcloud artifacts versions list --package=${LIBRARY_NAME}
+  variables:
+    PACKAGES_PATH: ${MY_PACKAGES_3_PATH}
+    LIBRARY_NAME: ${MY_LIBRARY_3_NAME}
+  only:
+      - develop
+  when: manual
+
+
 
 ##### test stage #######################################################
 
@@ -156,7 +191,7 @@ upload-packages-2:
     - pip install keyrings.google-artifactregistry-auth
     - pip install -r requirements.txt
 
-test-packge-1:
+test-analytics-packages:
   extends:
     - .test-packages
   script:
@@ -166,7 +201,7 @@ test-packge-1:
       - develop
   when: manual
 
-test-packge-2:
+test-frontend-packages:
   extends:
     - .test-packages
   script:
@@ -176,3 +211,12 @@ test-packge-2:
       - develop
   when: manual
 
+test-frontend-packages:
+  extends:
+    - .test-packages
+  script:
+    - pip install --index-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/simple/ ${MY_LIBRARY_3_NAME}
+    - python3 run_backend_packages.py
+  only:
+      - develop
+  when: manual
