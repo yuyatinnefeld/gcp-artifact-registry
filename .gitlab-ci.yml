@@ -12,6 +12,7 @@ variables:
   GCP_PROJECT_ID: yuyatinnefeld-dev
   CLOUD_SDK_IMAGE_URL: google/cloud-sdk
 
+
 stages:
   - versioning
   - build
@@ -171,8 +172,6 @@ upload-backend-poetry-packages:
   only:
       - develop
   when: manual
-
-
 
 ##### test stage #######################################################
 
