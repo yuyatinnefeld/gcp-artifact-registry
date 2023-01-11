@@ -133,7 +133,6 @@ upload-frontend-packages:
   extends:
     - .upload-packages
   script:
-    - gcloud artifacts print-settings python --project=${GCP_PROJECT_ID} --repository=${REPO_NAME} --location=${REGION} --json-key=./credentials.json
     - python3 -m twine upload --repository-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/ ${PACKAGES_PATH}/dist/* --verbose
     - gcloud artifacts versions list --package=${LIBRARY_NAME}
   variables:
@@ -163,7 +162,6 @@ upload-backend-poetry-packages:
   extends:
     - .upload-poetry-packages
   script:
-    - gcloud artifacts print-settings python --project=${GCP_PROJECT_ID} --repository=${REPO_NAME} --location=${REGION} --json-key=./credentials.json
     - poetry config repositories.google https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}
     - poetry publish --build -r google
     - gcloud artifacts versions list --package=${LIBRARY_NAME}
@@ -196,7 +194,7 @@ test-analytics-packages:
   extends:
     - .test-packages
   script:
-    - pip install --index-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/simple/ ${MY_LIBRARY_1_NAME}
+    - pip install --extra-index-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/simple/ ${MY_LIBRARY_1_NAME}
     - python3 run_analytics_packages.py
   only:
       - develop
@@ -206,7 +204,7 @@ test-frontend-packages:
   extends:
     - .test-packages
   script:
-    - pip install --index-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/simple/ ${MY_LIBRARY_2_NAME}
+    - pip install --extra-index-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/simple/ ${MY_LIBRARY_2_NAME}
     - python3 run_frontend_packages.py
   only:
       - develop
@@ -216,7 +214,7 @@ test-backend-packages:
   extends:
     - .test-packages
   script:
-    - pip install --index-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/simple/ ${MY_LIBRARY_3_NAME}
+    - pip install --extra-index-url https://${REGION}-python.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/simple/ ${MY_LIBRARY_3_NAME}
     - python3 run_backend_packages.py
   only:
       - develop
